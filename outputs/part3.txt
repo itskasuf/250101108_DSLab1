@@ -1,0 +1,121 @@
+
+#############  PART 3 : stacks - undo / redo  #############
+Juice qty = (d1 mod 3)+1 = 2, Wrap qty = (d2 mod 3)+1 = 2
+
+[3b] required command sequence
+  $ ADD Burger 2
+      cart| Burger 2
+      undo| Burger 2   (top on the left)
+      redo| (empty)
+  $ ADD Juice 2
+      cart| Burger 2, Juice 2
+      undo| Juice 2 | Burger 2   (top on the left)
+      redo| (empty)
+  $ ADD Fries 1
+      cart| Burger 2, Juice 2, Fries 1
+      undo| Fries 1 | Juice 2 | Burger 2   (top on the left)
+      redo| (empty)
+  $ UNDO
+      cart| Burger 2, Juice 2
+      undo| Juice 2 | Burger 2   (top on the left)
+      redo| Fries 1   (top on the left)
+  $ UNDO
+      cart| Burger 2
+      undo| Burger 2   (top on the left)
+      redo| Juice 2 | Fries 1   (top on the left)
+  $ REDO
+      cart| Burger 2, Juice 2
+      undo| Juice 2 | Burger 2   (top on the left)
+      redo| Fries 1   (top on the left)
+  $ ADD Wrap 2
+      cart| Burger 2, Juice 2, Wrap 2
+      undo| Wrap 2 | Juice 2 | Burger 2   (top on the left)
+      redo| (empty)
+  $ REDO
+      -- REDO ignored: nothing to redo
+      cart| Burger 2, Juice 2, Wrap 2
+      undo| Wrap 2 | Juice 2 | Burger 2   (top on the left)
+      redo| (empty)
+  $ UNDO
+      cart| Burger 2, Juice 2
+      undo| Juice 2 | Burger 2   (top on the left)
+      redo| Wrap 2   (top on the left)
+  $ SEND
+      ** kitchen ticket: Burger x2 + Juice x2   total 41.00 AED
+      cart| (empty)
+      undo| (empty)
+      redo| (empty)
+  $ UNDO
+      -- UNDO ignored: nothing to undo
+      cart| (empty)
+      undo| (empty)
+      redo| (empty)
+
+[3c] broken till: ADD does NOT clear redo
+  $ ADD Fries 2
+      cart| Fries 2
+      undo| Fries 2   (top on the left)
+      redo| (empty)
+  $ ADD Juice 1
+      cart| Fries 2, Juice 1
+      undo| Juice 1 | Fries 2   (top on the left)
+      redo| (empty)
+  $ UNDO
+      cart| Fries 2
+      undo| Fries 2   (top on the left)
+      redo| Juice 1   (top on the left)
+  $ UNDO
+      cart| (empty)
+      undo| (empty)
+      redo| Fries 2 | Juice 1   (top on the left)
+  $ ADD Burger 1
+      cart| Burger 1
+      undo| Burger 1   (top on the left)
+      redo| Fries 2 | Juice 1   (top on the left)
+  $ REDO
+      cart| Burger 1, Fries 2
+      undo| Fries 2 | Burger 1   (top on the left)
+      redo| Juice 1   (top on the left)
+  $ REDO
+      cart| Burger 1, Fries 2, Juice 1
+      undo| Juice 1 | Fries 2 | Burger 1   (top on the left)
+      redo| (empty)
+
+[3d] one key that undoes the last 3 actions (UNDO3)
+  $ ADD Burger 1
+      cart| Burger 1
+      undo| Burger 1   (top on the left)
+      redo| (empty)
+  $ ADD Fries 2
+      cart| Burger 1, Fries 2
+      undo| Fries 2 | Burger 1   (top on the left)
+      redo| (empty)
+  $ ADD Juice 1
+      cart| Burger 1, Fries 2, Juice 1
+      undo| Juice 1 | Fries 2 | Burger 1   (top on the left)
+      redo| (empty)
+  $ ADD Wrap 1
+      cart| Burger 1, Fries 2, Juice 1, Wrap 1
+      undo| Wrap 1 | Juice 1 | Fries 2 | Burger 1   (top on the left)
+      redo| (empty)
+  $ UNDO3
+      cart| Burger 1
+      undo| Burger 1   (top on the left)
+      redo| <batch of 3: Fries 2 | Juice 1 | Wrap 1>   (top on the left)
+  $ REDO
+      cart| Burger 1, Fries 2, Juice 1, Wrap 1
+      undo| Wrap 1 | Juice 1 | Fries 2 | Burger 1   (top on the left)
+      redo| (empty)
+  $ UNDO
+      cart| Burger 1, Fries 2, Juice 1
+      undo| Juice 1 | Fries 2 | Burger 1   (top on the left)
+      redo| Wrap 1   (top on the left)
+  $ UNDO3
+      cart| (empty)
+      undo| (empty)
+      redo| <batch of 3: Burger 1 | Fries 2 | Juice 1> | Wrap 1   (top on the left)
+  $ SEND
+      ** kitchen ticket: (nothing)   total 0.00 AED
+      cart| (empty)
+      undo| (empty)
+      redo| (empty)

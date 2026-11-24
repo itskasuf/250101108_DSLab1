@@ -1,0 +1,22 @@
+Registration No. 250101108 -> d1=1, d2=1, d3=0, d4=8
+Edge-case tests for QuickServe
+
+T1  Dequeue from both empty queues       | expect: rail 0, line 0              | got: rail 0, line 0              | ok
+T2  Full rail: push K+1 tickets (K=5)    | expect: 5 accepted, full=1          | got: 5 accepted, full=1          | ok
+T3  Rail index wraps past the end        | expect: comes out 2 then 3          | got: comes out 2 then 3          | ok
+T4  Every order express                  | expect: same as FIFO (14.60)        | got: 14.60 vs FIFO 14.60         | ok
+T5  Regular reaches exactly W=10         | expect: R2 starts 10, waits 10      | got: R2 starts 10, waits 10      | ok
+T6  Express arrives before R's deadline  | expect: E3 starts 10, R2 at 12      | got: E3 starts 10, R2 at 12      | ok
+T7  Idle kitchen (gaps between orders)   | expect: starts 5 and 20, waits 0    | got: starts 5 and 20, waits 0    | ok
+     program prints:      -- UNDO ignored: nothing to undo
+T8  UNDO on an empty stack               | expect: nothing changes             | got: cart empty, undo 0, redo 0  | ok
+      ** kitchen ticket: (nothing)   total 0.00 AED
+     program prints:      -- REDO ignored: nothing to redo
+T9  REDO right after SEND                | expect: nothing to redo             | got: cart empty, redo 0          | ok
+T10 UNDO3 with only 2 actions            | expect: 2 undone, 1 REDO restores 2 | got: 2 undone, undo now 2        | ok
+T11 malloc returns NULL in create_order  | expect: NULL returned, no crash     | got: NULL returned               | ok
+T12 malloc returns NULL in line_push     | expect: rejected, length stays 1    | got: returned 0, length 1        | ok
+T13 malloc returns NULL in rail_create   | expect: create fails cleanly        | got: returned 0                  | ok
+T14 total_bill with n = 0                | expect: 0.00                        | got: 0.00                        | ok
+
+14 of 14 tests passed

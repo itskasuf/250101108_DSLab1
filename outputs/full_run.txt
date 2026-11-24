@@ -1,0 +1,253 @@
+Registration No. 250101108 -> d1=1, d2=1, d3=0, d4=8
+
+#############  PART 1 : structures and pointers  #############
+
+[1a] layout of Order (as given)
+    type   offset  0  size  1
+    price  offset  8  size  8
+    id     offset 16  size  4
+    item   offset 20  size 18
+    qty    offset 40  size  4
+    sizeof(Order)        = 48
+  layout of OrderCompact (reordered)
+    price  offset  0  size  8
+    id     offset  8  size  4
+    qty    offset 12  size  4
+    item   offset 16  size 18
+    type   offset 34  size  1
+    sizeof(OrderCompact) = 40
+
+[1b] 25% discount on a 16.00 AED Wrap
+    before                      : 16.00
+      inside apply_discount_copy: o.price = 12.00 (this is a copy)
+    after apply_discount_copy() : 16.00  (no effect)
+    after apply_discount()      : 12.00  (discount applied)
+
+[1c] N = 5 + d4 = 5 + 8 = 13 orders
+    [ 1] Biryani        E  1 x  18.00 =   18.00
+    [ 2] Mango Lassi    R  2 x   8.50 =   17.00
+    [ 3] Samosa         R  1 x   3.00 =    3.00
+    [ 4] Club Sandwich  E  2 x  14.00 =   28.00
+    [ 5] Chai           R  1 x   2.50 =    2.50
+    [ 6] Paneer Roll    R  2 x   9.00 =   18.00
+    [ 7] Pasta          E  1 x  15.00 =   15.00
+    [ 8] Cold Coffee    R  2 x  10.00 =   20.00
+    [ 9] Noodles        R  1 x  12.50 =   12.50
+    [10] Brownie        E  2 x   6.00 =   12.00
+    [11] Water          R  1 x   1.50 =    1.50
+    [12] Fruit Bowl     R  2 x   7.00 =   14.00
+    [13] Pizza          E  1 x  20.00 =   20.00
+    total_bill = 181.50 AED
+    freed 13 orders
+
+#############  PART 2 : queues - kitchen dispatch  #############
+K = 3 + (d4 mod 3) = 3 + (8 mod 3) = 5
+
+deriving the stream:
+  i=1  j=2  t = 2(1) + (1 mod 3) =  3   p = 3 + ((1+1) mod 5) = 5
+  i=2  j=3  t = 2(2) + (0 mod 3) =  4   p = 3 + ((2+1) mod 5) = 6
+  i=3  j=4  t = 2(3) + (8 mod 3) =  8   p = 3 + ((3+1) mod 5) = 7
+  i=4  j=1  t = 2(4) + (1 mod 3) =  9   p = 3 + ((4+1) mod 5) = 3
+  i=5  j=2  t = 2(5) + (1 mod 3) = 11   p = 3 + ((5+1) mod 5) = 4
+  i=6  j=3  t = 2(6) + (0 mod 3) = 12   p = 3 + ((6+1) mod 5) = 5
+  i=7  j=4  t = 2(7) + (8 mod 3) = 16   p = 3 + ((7+1) mod 5) = 6
+  i=8  j=1  t = 2(8) + (1 mod 3) = 17   p = 3 + ((8+1) mod 5) = 7
+  i=9  j=2  t = 2(9) + (1 mod 3) = 19   p = 3 + ((9+1) mod 5) = 3
+  i=10 j=3  t = 2(10) + (0 mod 3) = 20   p = 3 + ((10+1) mod 5) = 4
+
+[2c] FIFO kitchen, rail capacity K = 5
+    i  kind  arrive  cook  start  finish  wait
+   ---------------------------------------------
+    1    R       3      5      3       8     0
+    2    R       4      6      8      14     4
+    3    R       8      7     14      21     6
+    4    R       9      3     21      24    12
+    5    R      11      4     24      28    13
+    6    R      12      5     28      33    16
+    7    R      16      6     33      39    17
+    8    R      17      7     39      46    22
+    9    R      19      3     46      49    27
+   10    R      20      4     49      53    29
+   ---------------------------------------------
+   mean waiting time = 14.60 min
+
+[2d] same stream, different rail sizes
+    K    mean wait   most tickets on rail   most tickets in line
+    1      14.60             1                     6
+    5      14.60             5                     2
+   10      14.60             7                     0
+
+#############  PART 3 : stacks - undo / redo  #############
+Juice qty = (d1 mod 3)+1 = 2, Wrap qty = (d2 mod 3)+1 = 2
+
+[3b] required command sequence
+  $ ADD Burger 2
+      cart| Burger 2
+      undo| Burger 2   (top on the left)
+      redo| (empty)
+  $ ADD Juice 2
+      cart| Burger 2, Juice 2
+      undo| Juice 2 | Burger 2   (top on the left)
+      redo| (empty)
+  $ ADD Fries 1
+      cart| Burger 2, Juice 2, Fries 1
+      undo| Fries 1 | Juice 2 | Burger 2   (top on the left)
+      redo| (empty)
+  $ UNDO
+      cart| Burger 2, Juice 2
+      undo| Juice 2 | Burger 2   (top on the left)
+      redo| Fries 1   (top on the left)
+  $ UNDO
+      cart| Burger 2
+      undo| Burger 2   (top on the left)
+      redo| Juice 2 | Fries 1   (top on the left)
+  $ REDO
+      cart| Burger 2, Juice 2
+      undo| Juice 2 | Burger 2   (top on the left)
+      redo| Fries 1   (top on the left)
+  $ ADD Wrap 2
+      cart| Burger 2, Juice 2, Wrap 2
+      undo| Wrap 2 | Juice 2 | Burger 2   (top on the left)
+      redo| (empty)
+  $ REDO
+      -- REDO ignored: nothing to redo
+      cart| Burger 2, Juice 2, Wrap 2
+      undo| Wrap 2 | Juice 2 | Burger 2   (top on the left)
+      redo| (empty)
+  $ UNDO
+      cart| Burger 2, Juice 2
+      undo| Juice 2 | Burger 2   (top on the left)
+      redo| Wrap 2   (top on the left)
+  $ SEND
+      ** kitchen ticket: Burger x2 + Juice x2   total 41.00 AED
+      cart| (empty)
+      undo| (empty)
+      redo| (empty)
+  $ UNDO
+      -- UNDO ignored: nothing to undo
+      cart| (empty)
+      undo| (empty)
+      redo| (empty)
+
+[3c] broken till: ADD does NOT clear redo
+  $ ADD Fries 2
+      cart| Fries 2
+      undo| Fries 2   (top on the left)
+      redo| (empty)
+  $ ADD Juice 1
+      cart| Fries 2, Juice 1
+      undo| Juice 1 | Fries 2   (top on the left)
+      redo| (empty)
+  $ UNDO
+      cart| Fries 2
+      undo| Fries 2   (top on the left)
+      redo| Juice 1   (top on the left)
+  $ UNDO
+      cart| (empty)
+      undo| (empty)
+      redo| Fries 2 | Juice 1   (top on the left)
+  $ ADD Burger 1
+      cart| Burger 1
+      undo| Burger 1   (top on the left)
+      redo| Fries 2 | Juice 1   (top on the left)
+  $ REDO
+      cart| Burger 1, Fries 2
+      undo| Fries 2 | Burger 1   (top on the left)
+      redo| Juice 1   (top on the left)
+  $ REDO
+      cart| Burger 1, Fries 2, Juice 1
+      undo| Juice 1 | Fries 2 | Burger 1   (top on the left)
+      redo| (empty)
+
+[3d] one key that undoes the last 3 actions (UNDO3)
+  $ ADD Burger 1
+      cart| Burger 1
+      undo| Burger 1   (top on the left)
+      redo| (empty)
+  $ ADD Fries 2
+      cart| Burger 1, Fries 2
+      undo| Fries 2 | Burger 1   (top on the left)
+      redo| (empty)
+  $ ADD Juice 1
+      cart| Burger 1, Fries 2, Juice 1
+      undo| Juice 1 | Fries 2 | Burger 1   (top on the left)
+      redo| (empty)
+  $ ADD Wrap 1
+      cart| Burger 1, Fries 2, Juice 1, Wrap 1
+      undo| Wrap 1 | Juice 1 | Fries 2 | Burger 1   (top on the left)
+      redo| (empty)
+  $ UNDO3
+      cart| Burger 1
+      undo| Burger 1   (top on the left)
+      redo| <batch of 3: Fries 2 | Juice 1 | Wrap 1>   (top on the left)
+  $ REDO
+      cart| Burger 1, Fries 2, Juice 1, Wrap 1
+      undo| Wrap 1 | Juice 1 | Fries 2 | Burger 1   (top on the left)
+      redo| (empty)
+  $ UNDO
+      cart| Burger 1, Fries 2, Juice 1
+      undo| Juice 1 | Fries 2 | Burger 1   (top on the left)
+      redo| Wrap 1   (top on the left)
+  $ UNDO3
+      cart| (empty)
+      undo| (empty)
+      redo| <batch of 3: Burger 1 | Fries 2 | Juice 1> | Wrap 1   (top on the left)
+  $ SEND
+      ** kitchen ticket: (nothing)   total 0.00 AED
+      cart| (empty)
+      undo| (empty)
+      redo| (empty)
+
+#############  PART 4 : express orders with an aging rule  #############
+W = 10 + d3 = 10 + 0 = 10 min; orders 3, 6, 9 are express
+
+[4b] two queues, deadline rule (my design)
+    i  kind  arrive  cook  start  finish  wait
+   ---------------------------------------------
+    1    R       3      5      3       8     0
+    2    R       4      6     20      26    16
+    3    E       8      7      8      15     0
+    4    R       9      3     26      29    17
+    5    R      11      4     32      36    21
+    6    E      12      5     15      20     3
+    7    R      16      6     36      42    20
+    8    R      17      7     42      49    25
+    9    E      19      3     29      32    10
+   10    R      20      4     49      53    29
+   ---------------------------------------------
+
+     plain FIFO on the same stream
+    i  kind  arrive  cook  start  finish  wait
+   ---------------------------------------------
+    1    R       3      5      3       8     0
+    2    R       4      6      8      14     4
+    3    E       8      7     14      21     6
+    4    R       9      3     21      24    12
+    5    R      11      4     24      28    13
+    6    E      12      5     28      33    16
+    7    R      16      6     33      39    17
+    8    R      17      7     39      46    22
+    9    E      19      3     46      49    27
+   10    R      20      4     49      53    29
+   ---------------------------------------------
+
+     alternative: late aging (promote only after waiting >= W)
+    i  kind  arrive  cook  start  finish  wait
+   ---------------------------------------------
+    1    R       3      5      3       8     0
+    2    R       4      6     15      21    11
+    3    E       8      7      8      15     0
+    4    R       9      3     21      24    12
+    5    R      11      4     24      28    13
+    6    E      12      5     45      50    33
+    7    R      16      6     28      34    12
+    8    R      17      7     34      41    17
+    9    E      19      3     50      53    31
+   10    R      20      4     41      45    21
+   ---------------------------------------------
+
+[4b] comparison (minutes)
+    policy               express  regular   all    worst regular  worst express
+    plain FIFO            16.33    13.86   14.60        29             27
+    deadline rule          4.33    18.29   14.10        29             10
+    late aging            21.33    12.29   15.00        21             33

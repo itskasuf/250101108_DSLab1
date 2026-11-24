@@ -1,0 +1,40 @@
+
+#############  PART 1 : structures and pointers  #############
+
+[1a] layout of Order (as given)
+    type   offset  0  size  1
+    price  offset  8  size  8
+    id     offset 16  size  4
+    item   offset 20  size 18
+    qty    offset 40  size  4
+    sizeof(Order)        = 48
+  layout of OrderCompact (reordered)
+    price  offset  0  size  8
+    id     offset  8  size  4
+    qty    offset 12  size  4
+    item   offset 16  size 18
+    type   offset 34  size  1
+    sizeof(OrderCompact) = 40
+
+[1b] 25% discount on a 16.00 AED Wrap
+    before                      : 16.00
+      inside apply_discount_copy: o.price = 12.00 (this is a copy)
+    after apply_discount_copy() : 16.00  (no effect)
+    after apply_discount()      : 12.00  (discount applied)
+
+[1c] N = 5 + d4 = 5 + 8 = 13 orders
+    [ 1] Biryani        E  1 x  18.00 =   18.00
+    [ 2] Mango Lassi    R  2 x   8.50 =   17.00
+    [ 3] Samosa         R  1 x   3.00 =    3.00
+    [ 4] Club Sandwich  E  2 x  14.00 =   28.00
+    [ 5] Chai           R  1 x   2.50 =    2.50
+    [ 6] Paneer Roll    R  2 x   9.00 =   18.00
+    [ 7] Pasta          E  1 x  15.00 =   15.00
+    [ 8] Cold Coffee    R  2 x  10.00 =   20.00
+    [ 9] Noodles        R  1 x  12.50 =   12.50
+    [10] Brownie        E  2 x   6.00 =   12.00
+    [11] Water          R  1 x   1.50 =    1.50
+    [12] Fruit Bowl     R  2 x   7.00 =   14.00
+    [13] Pizza          E  1 x  20.00 =   20.00
+    total_bill = 181.50 AED
+    freed 13 orders
